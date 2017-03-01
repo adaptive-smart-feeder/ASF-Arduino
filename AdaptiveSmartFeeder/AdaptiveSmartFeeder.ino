@@ -46,6 +46,12 @@ void loop() {
     else if(comando == "off") {
       digitalWrite(LED_PIN, LOW);
     }
+    else if(comando.startsWith("ac ")) {
+      comando.remove(0, 3);
+      int a = comando.toInt() + 3;
+      Serial.print("  Num = ");
+      Serial.println(a);
+    }
     else {
       Serial.println("Mas nada aconteceu");
       mySerial.println("oi");
