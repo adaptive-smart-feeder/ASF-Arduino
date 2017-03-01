@@ -22,6 +22,7 @@ SoftwareSerial mySerial(7, 8); // RX, TX
 //     Pin 2/RXD          Pin 8
 
 void setup() {
+  
   Serial.begin(9600);
   mySerial.begin(9600);
 
@@ -31,6 +32,12 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   
   Serial.println("nasceu");
+
+  //Stepper's setup
+  stepper1.setMaxSpeed(1000.0);
+  stepper1.setAcceleration(100.0);
+  stepper1.setSpeed(200);
+  //stepper1.moveTo(4100);
 }
 
 void loop() {  
