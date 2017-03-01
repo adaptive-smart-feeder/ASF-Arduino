@@ -13,6 +13,8 @@
 // Initialize with pin sequence IN1-IN3-IN2-IN4 for using the AccelStepper with 28BYJ-48
 AccelStepper stepper1(HALFSTEP, motorPin1, motorPin3, motorPin2, motorPin4);
 
+int target = 4150; //empírico
+int lackingMass = 0;
 // Esquemático:
 // https://evothings.com/control-an-led-using-hm-10-ble-module-an-arduino-and-a-mobile-app/
 
@@ -37,11 +39,21 @@ void setup() {
   stepper1.setMaxSpeed(1000.0);
   stepper1.setAcceleration(100.0);
   stepper1.setSpeed(200);
-  //stepper1.moveTo(4100);
 }
 
-void loop() {  
+void loop() {
+
   int c;
+
+  if(lackingMass > 0 && stepper1.distanceToGo() == 0) {
+    target *= -1;
+    stepper1.moveTo(stepper1.currentPosition() + target);
+    
+    lackingMass -= 50; //Suponha que cairam 50 g
+    Serial.print("--->> = ");
+    Serial.println(lackingMass);
+  }
+  stepper1.run();
 
   if(mySerial.available()) {
     
@@ -67,14 +79,15 @@ void loop() {
     }
     else if(comando.startsWith("ac ")) {
       comando.remove(0, 3);
-      int a = comando.toInt() + 3;
-      Serial.print("  Num = ");
-      Serial.println(a);
+      int desiredMass = comando.toInt();
+      Serial.print("  desiredMass = ");
+      Serial.println(desiredMass);
+
+      lackingMass = desiredMass;
     }
     else {
       Serial.println("Mas nada aconteceu");
       mySerial.println("oi");
     }
-    
   }
 } 
