@@ -1,5 +1,17 @@
 #include <SoftwareSerial.h>
+#include <AccelStepper.h>
+
 #define LED_PIN 2
+#define HALFSTEP 8
+
+// Motor pin definitions
+#define motorPin1  9     // IN1 on the ULN2003 driver 1
+#define motorPin2  10     // IN2 on the ULN2003 driver 1
+#define motorPin3  11     // IN3 on the ULN2003 driver 1
+#define motorPin4  12     // IN4 on the ULN2003 driver 1
+
+// Initialize with pin sequence IN1-IN3-IN2-IN4 for using the AccelStepper with 28BYJ-48
+AccelStepper stepper1(HALFSTEP, motorPin1, motorPin3, motorPin2, motorPin4);
 
 // Esquemático:
 // https://evothings.com/control-an-led-using-hm-10-ble-module-an-arduino-and-a-mobile-app/
