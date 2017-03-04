@@ -13,7 +13,7 @@
 // Initialize with pin sequence IN1-IN3-IN2-IN4 for using the AccelStepper with 28BYJ-48
 AccelStepper stepper1(HALFSTEP, motorPin1, motorPin3, motorPin2, motorPin4);
 
-int target = 4150; //empírico
+int target = -1175; //empírico
 int lackingMass = 0;
 // Esquemático:
 // https://evothings.com/control-an-led-using-hm-10-ble-module-an-arduino-and-a-mobile-app/
@@ -37,8 +37,8 @@ void setup() {
 
   //Stepper's setup
   stepper1.setMaxSpeed(1000.0);
-  stepper1.setAcceleration(100.0);
-  stepper1.setSpeed(200);
+  stepper1.setAcceleration(200.0);
+  stepper1.setSpeed(300);
 }
 
 void loop() {
