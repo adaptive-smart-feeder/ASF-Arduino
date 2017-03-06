@@ -1,6 +1,7 @@
 #include <Q2HX711.h>
 #include <SoftwareSerial.h>
 #include <AccelStepper.h>
+#include <string.h>
 
 #define LED_PIN 2
 #define HALFSTEP 8
@@ -40,6 +41,20 @@ SoftwareSerial mySerial(7, 8); // RX, TX
 // Connect HM10      Arduino Uno
 //     Pin 1/TXD          Pin 7
 //     Pin 2/RXD          Pin 8
+
+String command[10];
+
+void split(char *string) {
+
+  char *p, *q;
+
+  p = strtok_r(string, " ", &q);
+
+  for(int i = 0; p != NULL; i++) {
+    command[i] = String(p);
+    p = strtok_r(NULL, " ", &q);
+  }
+}
 
 void setup() {
   
@@ -152,7 +167,6 @@ void loop() {
       stepper1.moveTo(stepper1.currentPosition() + target);
     } else {
       Serial.println("Mas nada aconteceu");
-      mySerial.println("oi");
     }
   }
 } 
