@@ -93,7 +93,7 @@ void loop() {
   if(desiredMass <= 0 && !isUnderHole && !shouldMove)
       weightBeforeActivation = getWeight();
 
-  if(/*my*/Serial.available()) {
+  if(mySerial.available()) {
     
     /*  Comandos vindos do iPhone vem em forma de string.
      *  É necessário definir o formato dos comandos para
@@ -103,7 +103,7 @@ void loop() {
      *  valores, como em comandos na forma "acionar %d"
      *  (Onde pode morar a treta).
      */
-    String comando = /*my*/Serial.readString();
+    String comando = mySerial.readString();
 
     Serial.print("comando: ");
     Serial.println(comando);
