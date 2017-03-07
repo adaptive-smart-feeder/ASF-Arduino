@@ -9,6 +9,12 @@
 #define motorPin3  11
 #define motorPin4  12
 
+typedef struct Date {
+  int sec, minu, hour, day;
+} Date;
+
+Date scheduled[10];
+
 AccelStepper stepper1(HALFSTEP, motorPin1, motorPin3, motorPin2, motorPin4);
 
 Q2HX711 hx711(A3, A2);
@@ -32,10 +38,17 @@ long getWeight() {
   return diff > 0 ? diff : 0;
 }
 
-void repeatMe() {
+void checkAutomatic() {
   
     Serial.print("Uptime (s): ");
     Serial.println(millis() / 1000);
+    Serial.print("-----\n P = ");
+    Serial.println(getWeight());
+    Serial.println("-----");
+}
+
+void checkSchedule() {
+  //testa se é o horário de liberar em todos os schedules
 }
 
 SoftwareSerial mySerial(7, 8);
@@ -50,8 +63,6 @@ void setup() {
   stepper1.setSpeed(300);
 
   weightBeforeActivation = getWeight();
-
-  timer.setInterval(1000, repeatMe);
 }
 
 void controlMotor() {
@@ -78,18 +89,48 @@ void controlMotor() {
   stepper1.run();
 }
 
+void treateSchedule(String comando) {
+
+  int spaces[10];
+  int n = 0;
+  int i = 0;
+  for (char c = comando[0]; c; c = comando[i++])
+    if (c == ' ')
+      spaces[n++] = i;
+  for(i = 1; i <= n; i++) {
+    Serial.println(comando.substring(spaces[i - 1], spaces[i]));
+    if(i%4 == 0) {
+      scheduled[i/4].sec = comando.substring(spaces[i - 1], spaces[i]).toInt();
+    } else if(i%4 == 1) {
+      scheduled[i/4].minu = comando.substring(spaces[i - 1], spaces[i]).toInt();
+    } else if(i%4 == 2) {
+      scheduled[i/4].hour = comando.substring(spaces[i - 1], spaces[i]).toInt();
+    } else {
+      scheduled[i/4].day = comando.substring(spaces[i - 1], spaces[i]).toInt();
+    }
+  }
+  timer.setInterval(1000, checkSchedule);
+}
+
+void treateAutomatic(String comando) {
+  //Faz os tratamentos aí
+  timer.setInterval(3000, checkAutomatic);
+}
+
 void loop() {
 
   int c;
 
   controlMotor();
 
+  timer.run();
+
   if(desiredMass <= 0 && !isUnderHole && !shouldMove)
       weightBeforeActivation = getWeight();
 
-  if(mySerial.available()) {
+  if(/*my*/Serial.available()) {
     
-    String comando = mySerial.readString();
+    String comando = /*my*/Serial.readString();
 
     if(comando.startsWith("ac ")) {
       comando.remove(0, 3);
@@ -104,9 +145,12 @@ void loop() {
         isUnderHole = false;
       }
     } else if (comando.startsWith("auto")) {
-      
+      treateAutomatic(comando);
+      Serial.print("-----\n P = ");
+      Serial.println(getWeight());
+      Serial.println("-----");
     } else if (comando.startsWith("sche")) {
-      
+      treateSchedule(comando);
     }
   }
 } 
