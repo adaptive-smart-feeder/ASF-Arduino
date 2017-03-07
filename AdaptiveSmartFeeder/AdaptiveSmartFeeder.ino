@@ -1,17 +1,14 @@
 #include <Q2HX711.h>
 #include <SoftwareSerial.h>
 #include <AccelStepper.h>
+#include "SimpleTimer.h"
 
-#define LED_PIN 2
 #define HALFSTEP 8
+#define motorPin1  9
+#define motorPin2  10
+#define motorPin3  11
+#define motorPin4  12
 
-// Motor pin definitions
-#define motorPin1  9      // IN1 on the ULN2003 driver 1
-#define motorPin2  10     // IN2 on the ULN2003 driver 1
-#define motorPin3  11     // IN3 on the ULN2003 driver 1
-#define motorPin4  12     // IN4 on the ULN2003 driver 1
-
-// Initialize with pin sequence IN1-IN3-IN2-IN4 for using the AccelStepper with 28BYJ-48
 AccelStepper stepper1(HALFSTEP, motorPin1, motorPin3, motorPin2, motorPin4);
 
 Q2HX711 hx711(A3, A2);
@@ -33,25 +30,13 @@ long getWeight() {
   return diff > 0 ? diff : 0;
 }
 
-// Esquemático:
-// https://evothings.com/control-an-led-using-hm-10-ble-module-an-arduino-and-a-mobile-app/
-
-SoftwareSerial mySerial(7, 8); // RX, TX  
-// Connect HM10      Arduino Uno
-//     Pin 1/TXD          Pin 7
-//     Pin 2/RXD          Pin 8
+SoftwareSerial mySerial(7, 8);
 
 void setup() {
   
   Serial.begin(9600);
   mySerial.begin(9600);
 
-  // configurar portas
-  pinMode(LED_PIN, OUTPUT);
-  
-  Serial.println("nasceu");
-
-  //Stepper's setup
   stepper1.setMaxSpeed(1000.0);
   stepper1.setAcceleration(200.0);
   stepper1.setSpeed(300);
@@ -88,71 +73,30 @@ void loop() {
   int c;
 
   controlMotor();
-  //stepper1.run();
 
   if(desiredMass <= 0 && !isUnderHole && !shouldMove)
       weightBeforeActivation = getWeight();
 
   if(mySerial.available()) {
     
-    /*  Comandos vindos do iPhone vem em forma de string.
-     *  É necessário definir o formato dos comandos para
-     *  que não haja uma desinteligência entre o iPhone e
-     *  o Arduino.
-     *  Necessário também formatar a entrada para extrair
-     *  valores, como em comandos na forma "acionar %d"
-     *  (Onde pode morar a treta).
-     */
     String comando = mySerial.readString();
 
-    Serial.print("comando: ");
-    Serial.println(comando);
-
-    // porrada de if a vir
-    if(comando == "on") {
-      digitalWrite(LED_PIN, HIGH);
-    } else if(comando == "off") {
-      digitalWrite(LED_PIN, LOW);
-    } else if(comando.startsWith("ac ")) {
+    if(comando.startsWith("ac ")) {
       comando.remove(0, 3);
       String mode = comando.substring(0,1);
       int massAsked = comando.substring(2).toInt();
-      Serial.print("  massAsked = ");
-      Serial.println(massAsked);
-
+      
       long weight = getWeight();
 
-      //0: exatamente; 1: a mais
       desiredMass = mode == "0" ? massAsked: massAsked + weight;
       if(desiredMass > weight) {
         shouldMove = true;
         isUnderHole = false;
       }
-    }
-    //Debugs
-    else if (comando == "we"){
-      Serial.print("\n\n----------\n\n");
-      Serial.print(getWeight());
-      Serial.print(" g\n\n----------\n\n");
-      delay(250);
-    } else if(comando == "sh") {
-      Serial.print("\n\n----------\n\n");
-      Serial.print(shouldMove);
-      Serial.print("\n\n----------\n\n");
-    } else if(comando == "is") {
-      Serial.print("\n\n----------\n\n");
-      Serial.print(isUnderHole);
-      Serial.print("\n\n----------\n\n");
-    } else if(comando == "de") {
-      Serial.print("\n\n----------\n\n");
-      Serial.print(desiredMass);
-      Serial.print(" g\n\n----------\n\n");
-    } else if(comando == "mo") {
-      target *= -1;
-      stepper1.moveTo(stepper1.currentPosition() + target);
-    } else {
-      Serial.println("Mas nada aconteceu");
-      mySerial.println("oi");
+    } else if (comando.startsWith("auto")) {
+      
+    } else if (comando.startsWith("sche")) {
+      
     }
   }
 } 
