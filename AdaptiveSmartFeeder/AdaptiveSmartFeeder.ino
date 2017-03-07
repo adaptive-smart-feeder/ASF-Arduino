@@ -23,11 +23,19 @@ int target = -1075;
 int desiredMass = 0;
 int massOfPlate = 135;
 
+SimpleTimer timer;
+
 long getWeight() {
 
   long diff = (zero - hx711.read() / 100);
   diff = (diff / 3.08 - massOfPlate);
   return diff > 0 ? diff : 0;
+}
+
+void repeatMe() {
+  
+    Serial.print("Uptime (s): ");
+    Serial.println(millis() / 1000);
 }
 
 SoftwareSerial mySerial(7, 8);
@@ -42,6 +50,8 @@ void setup() {
   stepper1.setSpeed(300);
 
   weightBeforeActivation = getWeight();
+
+  timer.setInterval(1000, repeatMe);
 }
 
 void controlMotor() {
