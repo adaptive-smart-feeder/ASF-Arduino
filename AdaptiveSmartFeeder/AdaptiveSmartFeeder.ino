@@ -2,6 +2,7 @@
 #include <SoftwareSerial.h>
 #include <AccelStepper.h>
 #include "SimpleTimer.h"
+#include <string.h>
 
 #define HALFSTEP 8
 #define motorPin1  9
@@ -59,11 +60,21 @@ void checkSchedule() {
   //testa se é o horário de liberar em todos os schedules
 }
 
+String command[10];
 
+void split(char *string) {
+
+  char *p, *q;
+
+  p = strtok_r(string, " ", &q);
+
+  for(int i = 0; p != NULL; i++) {
+    command[i] = String(p);
+    p = strtok_r(NULL, " ", &q);
+  }
+}
 
 void check() {
-
-  
 }
 
 void controlMotor() {
@@ -166,6 +177,8 @@ void loop() {
 //      Serial.println("-----");
     } else if (comando.startsWith("sche")) {
       treatSchedule(comando);
+    } else {
+      Serial.println("Mas nada aconteceu");
     }
   }
 } 
