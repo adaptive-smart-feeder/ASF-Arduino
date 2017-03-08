@@ -82,6 +82,8 @@
   void check() {
     
     Serial.print("\nTime: ");
+    Serial.print(hour());
+    Serial.print(" : ");
     Serial.print(minute());
     Serial.print(" : ");
     Serial.println(second());
@@ -92,7 +94,9 @@
   void controlMotor() {
   
     if(stepper1.distanceToGo() == 0 && shouldMove) {
+      //Serial.println("MOTOR");
       if(!isUnderHole) {
+        //Serial.println("MOTOR N");
         delay(100);
         long currentWeight = getWeight();
         if(desiredMass > currentWeight) {
@@ -101,9 +105,11 @@
         } else {
           shouldMove = false;
           desiredMass = 0;
+          //Serial.println("MOTOR ELSE");
         }
         delay(200);
       } else {
+        //Serial.println("MOTOR S");
         delay(1000);
         target *= -1;
         stepper1.moveTo(stepper1.currentPosition() + target);
@@ -115,18 +121,21 @@
   
   void handleActivation(int massAsked, int mode) {
   
-    Serial.println("\nATIVOU");
+    Serial.print("\nmassAsked = ");
+    Serial.println(massAsked);
+    Serial.print("\nmode = ");
+    Serial.println(mode);
   
     long weight = getWeight();
   
-    long desiredMass = mode == 0 ? massAsked: massAsked + weight;
+    desiredMass = mode == 0 ? massAsked: massAsked + weight;
     if(desiredMass > weight) {
       shouldMove = true;
       isUnderHole = false;
     }
   }
   
-  void handleSchedule(int id, int hours, int minutes, int weight, bool isActivated, int days[]) {
+void handleSchedule(int id, int hours, int minutes, int weight, bool isActivated, int days[]) {
   
   bool isNew = true;
   int i = 0;
@@ -137,9 +146,11 @@
   schedule.time.hours = hours;
   schedule.time.minutes = minutes;
   schedule.isActivated = isActivated;
+  Serial.println("OI 1");
   while(days[i] != -1)
     schedule.days[days[i++]] = 1;
-  
+    
+  Serial.println("OI 2");
   for(i = 0; i < numberOfSchedules; i++)
     if(schedules[i].id == id) {
       isNew = false;
@@ -151,14 +162,20 @@
   } else {
     schedules[i] = schedule;
   }
+  Serial.println("Sched");
+  Serial.println(schedule.time.hours);
+  Serial.println(schedule.time.minutes);
 }
 
 void checkSchedule() {
-  
+
+  Serial.println("Entrou Sche");
   for(int i = 0; i < numberOfSchedules; i++)
   //TODO: Test if the current day is an activation day
     if(schedules[i].time.hours == hour() && schedules[i].time.minutes == minute()) {
       handleActivation(schedules[i].weight, 0);
+      Serial.println("Peso");
+      Serial.println(schedules[i].weight);
     }
 }
 
@@ -178,7 +195,7 @@ void setup() {
 
   weightBeforeActivation = getWeight();
 
-  timerId = timer.setInterval(1000, check);
+  timerId = timer.setInterval(60000, check);
 
   setTime(0, 0, 0, 0, 0, 0);
 }
@@ -197,16 +214,23 @@ void loop() {
   if(mySerial.available()) {
     
     String comando = mySerial.readString();
+    Serial.print("comando = ");
+    Serial.println(comando);
     split(comando);
 
-  if(command[0] == "ac") {
+    if(command[0] == "ac") {
+      
       int mode = command[1].toInt();
       int massAsked = command[2].toInt();
        
       handleActivation(massAsked, mode);
+      
     } else if (command[0] == "au") {
+      
       handleAutomatic(command[1]);
+      
     } else if (command[0] == "sc") {
+      
       int id = command[1].toInt();
       int hours = command[2].toInt();
       int minutes = command[3].toInt();
@@ -220,11 +244,15 @@ void loop() {
       }
       days[i] = -1;
       
-      handleSchedule(id, hours, minutes, weight, isActivated, days);      
+      handleSchedule(id, hours, minutes, weight, isActivated, days);
+          
     } else if (command[0] == "dt") {
+      
+      Serial.println("\ndt");
       int hours = command[1].toInt();
       int minutes = command[2].toInt();
       setTime(hours, minutes, 0, 1, 1, 2017);
+      
     } else {
       Serial.println("Mas nada aconteceu");
     }
