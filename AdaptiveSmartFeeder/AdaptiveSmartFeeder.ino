@@ -8,6 +8,8 @@
 
 #define HALFSTEP 8
 #define FEED_PERIOD 144
+#define PERIOD 7
+#define MAX 5
 #define motorPin1  9
 #define motorPin2  10
 #define motorPin3  11
@@ -25,6 +27,8 @@ public:
     this->hours = hours;
     this->minutes = minutes;
   }
+
+  Time() : Time(0,0) {};
 
   // Add time of 'other' to current Time
   void addTime(Time other) {
@@ -48,6 +52,20 @@ public:
     return 1;
   }
 
+};
+
+class Feed {
+
+public:
+
+  int quantity;
+  Time time;
+
+  Feed(int quantity, Time time) {
+    this->quantity = quantity;
+    this->time = time;
+  }
+  
 };
 
 typedef struct Schedule {
