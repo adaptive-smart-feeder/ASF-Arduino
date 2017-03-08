@@ -25,8 +25,6 @@ typedef struct Schedule {
   Time time;
 } Schedule;
 
-//Date scheduled[10];
-
 long zero = 83843;
 long weightBeforeActivation = 0;
 
@@ -80,7 +78,10 @@ void split(char *string) {
 }
 
 void check() {
-  Serial.print("\nHora ");
+  
+  Serial.print("\nTime: ");
+  Serial.print(minute());
+  Serial.print(" : ");
   Serial.println(second());
 }
 
@@ -119,30 +120,14 @@ void handleActivation(int massAsked, String mode) {
   }
 }
 
-void handleSchedule(String comando) {
+void handleSchedule(int id, int hours, int minutes, int isActivated, int days[7]) {
 
-  int spaces[10];
-  int n = 0;
-  int i = 0;
-  for (char c = comando[0]; c; c = comando[i++])
-    if (c == ' ')
-      spaces[n++] = i;
-  for(i = 1; i <= n; i++) {
-    Serial.println(comando.substring(spaces[i - 1], spaces[i]));
-//    if(i%4 == 0) {
-//      scheduled[i/4].sec = comando.substring(spaces[i - 1], spaces[i]).toInt();
-//    } else if(i%4 == 1) {
-//      scheduled[i/4].minu = comando.substring(spaces[i - 1], spaces[i]).toInt();
-//    } else if(i%4 == 2) {
-//      scheduled[i/4].hour = comando.substring(spaces[i - 1], spaces[i]).toInt();
-//    } else {
-//      scheduled[i/4].day = comando.substring(spaces[i - 1], spaces[i]).toInt();
-//    }
-  }
+  
 }
 
 void handleAutomatic(String comando) {
-  //Faz os tratamentos aí
+
+  
 }
 
 void setup() {
@@ -158,7 +143,7 @@ void setup() {
 
   timer.setInterval(1000, check);
 
-  setTime(15, 6, 40, 8, 3, 2017);
+  setTime(0, 0, 0, 0, 0, 0);
 }
 
 void loop() {
@@ -176,15 +161,15 @@ void loop() {
     
     String comando = /*my*/Serial.readString();
 
-    if(comando.startsWith("ac ")) {
+    if(comando.startsWith("acti")) {
       String mode = comando.substring(3, 4);
       int massAsked = comando.substring(4).toInt();
       
       handleActivation(massAsked, mode);
     } else if (comando.startsWith("auto")) {
-      handleAutomatic(comando);
+      //handleAutomatic(comando);
     } else if (comando.startsWith("sche")) {
-      handleSchedule(comando);
+      //handleSchedule(comando);
     } else {
       Serial.println("Mas nada aconteceu");
     }
