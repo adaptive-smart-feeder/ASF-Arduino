@@ -1,6 +1,5 @@
 #include <Time.h>
 #include <TimeLib.h>
-
 #include <Q2HX711.h>
 #include <SoftwareSerial.h>
 #include <AccelStepper.h>
@@ -23,7 +22,11 @@ typedef struct Schedule {
   int weight;
   int days[7] = {0, 0, 0, 0, 0, 0, 0};
   Time time;
+  bool isActivated;
 } Schedule;
+
+Schedule schedules[10];
+int numberOfSchedules = 0;
 
 long zero = 83843;
 long weightBeforeActivation = 0;
@@ -34,6 +37,7 @@ bool shouldMove = false;
 int target = -1075;
 int desiredMass = 0;
 int massOfPlate = 135;
+int timerId = 0;
 
 SimpleTimer timer;
 
@@ -122,7 +126,28 @@ void handleActivation(int massAsked, String mode) {
 
 void handleSchedule(int id, int hours, int minutes, int isActivated, int days[7]) {
 
+  bool isNew = true;
+  int i;
   
+  Schedule schedule;
+  schedule.id = id;
+  schedule.time.hours = hours;
+  schedule.time.minutes = minutes;
+  schedule.isActivated = isActivated ? true : false;
+  for(i = 0; i < 7; i++)
+     schedule.days[i] = days[i];
+  
+  for(i = 0; i < numberOfSchedules; i++)
+    if(schedules[i].id == id) {
+      isNew = false;
+      break;
+    }
+
+  if(isNew) {
+    schedules[numberOfSchedules++] = schedule;
+  } else {
+    schedules[i] = schedule;
+  }
 }
 
 void handleAutomatic(String comando) {
@@ -131,7 +156,7 @@ void handleAutomatic(String comando) {
 }
 
 void setup() {
-  
+
   Serial.begin(9600);
   mySerial.begin(9600);
 
@@ -141,7 +166,7 @@ void setup() {
 
   weightBeforeActivation = getWeight();
 
-  timer.setInterval(1000, check);
+  timerId = timer.setInterval(1000, check);
 
   setTime(0, 0, 0, 0, 0, 0);
 }
@@ -169,7 +194,9 @@ void loop() {
     } else if (comando.startsWith("auto")) {
       //handleAutomatic(comando);
     } else if (comando.startsWith("sche")) {
-      //handleSchedule(comando);
+      if(numberOfSchedules < 10) {
+        
+      }
     } else {
       Serial.println("Mas nada aconteceu");
     }
