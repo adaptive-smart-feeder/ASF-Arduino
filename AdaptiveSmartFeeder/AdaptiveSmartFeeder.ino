@@ -9,15 +9,17 @@
 #define motorPin3  11
 #define motorPin4  12
 
-typedef struct Date {
-  int sec, minu, hour, day;
-} Date;
+typedef struct time {
+  int minu, hour;
+} Time;
 
-Date scheduled[10];
+typedef struct Schedule {
 
-AccelStepper stepper1(HALFSTEP, motorPin1, motorPin3, motorPin2, motorPin4);
+  int days[7] = {0, 0, 0, 0, 0, 0, 0};
+  Time time;
+} Schedule;
 
-Q2HX711 hx711(A3, A2);
+//Date scheduled[10];
 
 long zero = 83843;
 long weightBeforeActivation = 0;
@@ -30,6 +32,12 @@ int desiredMass = 0;
 int massOfPlate = 135;
 
 SimpleTimer timer;
+
+AccelStepper stepper1(HALFSTEP, motorPin1, motorPin3, motorPin2, motorPin4);
+
+Q2HX711 hx711(A3, A2);
+
+SoftwareSerial mySerial(7, 8);
 
 long getWeight() {
 
@@ -51,18 +59,11 @@ void checkSchedule() {
   //testa se é o horário de liberar em todos os schedules
 }
 
-SoftwareSerial mySerial(7, 8);
 
-void setup() {
+
+void check() {
+
   
-  Serial.begin(9600);
-  mySerial.begin(9600);
-
-  stepper1.setMaxSpeed(1000.0);
-  stepper1.setAcceleration(200.0);
-  stepper1.setSpeed(300);
-
-  weightBeforeActivation = getWeight();
 }
 
 void controlMotor() {
@@ -89,7 +90,7 @@ void controlMotor() {
   stepper1.run();
 }
 
-void treateSchedule(String comando) {
+void treatSchedule(String comando) {
 
   int spaces[10];
   int n = 0;
@@ -99,22 +100,36 @@ void treateSchedule(String comando) {
       spaces[n++] = i;
   for(i = 1; i <= n; i++) {
     Serial.println(comando.substring(spaces[i - 1], spaces[i]));
-    if(i%4 == 0) {
-      scheduled[i/4].sec = comando.substring(spaces[i - 1], spaces[i]).toInt();
-    } else if(i%4 == 1) {
-      scheduled[i/4].minu = comando.substring(spaces[i - 1], spaces[i]).toInt();
-    } else if(i%4 == 2) {
-      scheduled[i/4].hour = comando.substring(spaces[i - 1], spaces[i]).toInt();
-    } else {
-      scheduled[i/4].day = comando.substring(spaces[i - 1], spaces[i]).toInt();
-    }
+//    if(i%4 == 0) {
+//      scheduled[i/4].sec = comando.substring(spaces[i - 1], spaces[i]).toInt();
+//    } else if(i%4 == 1) {
+//      scheduled[i/4].minu = comando.substring(spaces[i - 1], spaces[i]).toInt();
+//    } else if(i%4 == 2) {
+//      scheduled[i/4].hour = comando.substring(spaces[i - 1], spaces[i]).toInt();
+//    } else {
+//      scheduled[i/4].day = comando.substring(spaces[i - 1], spaces[i]).toInt();
+//    }
   }
   timer.setInterval(1000, checkSchedule);
 }
 
-void treateAutomatic(String comando) {
+void treatAutomatic(String comando) {
   //Faz os tratamentos aí
   timer.setInterval(3000, checkAutomatic);
+}
+
+void setup() {
+  
+  Serial.begin(9600);
+  mySerial.begin(9600);
+
+  stepper1.setMaxSpeed(1000.0);
+  stepper1.setAcceleration(200.0);
+  stepper1.setSpeed(300);
+
+  weightBeforeActivation = getWeight();
+
+  timer.setInterval(1000, check);
 }
 
 void loop() {
@@ -145,12 +160,12 @@ void loop() {
         isUnderHole = false;
       }
     } else if (comando.startsWith("auto")) {
-      treateAutomatic(comando);
-      Serial.print("-----\n P = ");
-      Serial.println(getWeight());
-      Serial.println("-----");
+      treatAutomatic(comando);
+//      Serial.print("-----\n P = ");
+//      Serial.println(getWeight());
+//      Serial.println("-----");
     } else if (comando.startsWith("sche")) {
-      treateSchedule(comando);
+      treatSchedule(comando);
     }
   }
 } 
