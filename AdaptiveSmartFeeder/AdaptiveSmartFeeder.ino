@@ -7,14 +7,48 @@
 #include <string.h>
 
 #define HALFSTEP 8
+#define FEED_PERIOD 144
 #define motorPin1  9
 #define motorPin2  10
 #define motorPin3  11
 #define motorPin4  12
 
-typedef struct time {
-  int minutes, hours;
-} Time;
+class Time {
+
+public:
+
+  // Attributes
+  int hours, minutes;
+
+  // Constructor
+  Time(int hours, int minutes) {
+    this->hours = hours;
+    this->minutes = minutes;
+  }
+
+  // Add time of 'other' to current Time
+  void addTime(Time other) {
+    this->hours = (this->hours + other.hours + (this->minutes + other.minutes >= 60) % 24);
+    this->minutes = (this->minutes + other.minutes) % 60;
+  }
+
+  // Return time of 'other' added to the current Time
+  Time addedTime(Time other) {
+    int hours = (this->hours + other.hours + (this->minutes + other.minutes >= 60) % 24);
+    int minutes = (this->minutes + other.minutes) % 60;
+    return Time(hours, minutes);
+  }
+
+  // Returns 0 if times are equal, -1 if current time is lower, and 1 otherwise
+  int compare(Time other) {
+    if(this->hours == other.hours && this->minutes == other.minutes)
+      return 0;
+    if(this->hours < other.hours || (this->hours == other.hours && this->minutes < other.minutes))
+      return -1;
+    return 1;
+  }
+
+};
 
 typedef struct Schedule {
   int id;
@@ -22,8 +56,6 @@ typedef struct Schedule {
   int days[7] = {0, 0, 0, 0, 0, 0, 0};
   Time time;
 } Schedule;
-
-//Date scheduled[10];
 
 long zero = 83843;
 long weightBeforeActivation = 0;
@@ -44,6 +76,7 @@ AccelStepper stepper1(HALFSTEP, motorPin1, motorPin3, motorPin2, motorPin4);
 Q2HX711 hx711(A3, A2);
 
 SoftwareSerial mySerial(7, 8);
+
 
 long getWeight() {
 
@@ -204,7 +237,7 @@ void loop() {
       }
       days[i] = -1;
       
-      handleSchedule(id, hours, minutes, weight, isActivated, days);
+//      handleSchedule(id, hours, minutes, weight, isActivated, days);
       
     } else {
       Serial.println("Mas nada aconteceu");
