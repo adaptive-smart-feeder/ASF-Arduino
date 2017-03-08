@@ -11,11 +11,12 @@
 #define motorPin4  12
 
 typedef struct time {
-  int minu, hour;
+  int minutes, hours;
 } Time;
 
 typedef struct Schedule {
-
+  int id;
+  int weight;
   int days[7] = {0, 0, 0, 0, 0, 0, 0};
   Time time;
 } Schedule;
@@ -62,9 +63,12 @@ void checkSchedule() {
 
 String command[10];
 
-void split(char *string) {
+void split(String str) {
 
+  char string[50];
   char *p, *q;
+
+  str.toCharArray(string, 50);
 
   p = strtok_r(string, " ", &q);
 
@@ -140,7 +144,7 @@ void setup() {
 
   weightBeforeActivation = getWeight();
 
-  timer.setInterval(1000, check);
+  timer.setInterval(1000, check);  
 }
 
 void loop() {
@@ -157,15 +161,15 @@ void loop() {
   if(/*my*/Serial.available()) {
     
     String comando = /*my*/Serial.readString();
+    split(comando);
 
-    if(comando.startsWith("ac ")) {
-      comando.remove(0, 3);
-      String mode = comando.substring(0,1);
-      int massAsked = comando.substring(2).toInt();
+    if(command[0] == "ac") {
+      String mode = command[1];
+      int massAsked = command[2].toInt();
       
       long weight = getWeight();
 
-      desiredMass = mode == "0" ? massAsked: massAsked + weight;
+      desiredMass = massAsked + (mode == "0" ? 0 : weight);
       if(desiredMass > weight) {
         shouldMove = true;
         isUnderHole = false;
