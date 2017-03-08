@@ -1,3 +1,5 @@
+#include <Time.h>
+#include <TimeLib.h>
 #include <Q2HX711.h>
 #include <SoftwareSerial.h>
 #include <AccelStepper.h>
@@ -35,6 +37,8 @@ int massOfPlate = 135;
 
 SimpleTimer timer;
 
+String command[20];
+
 AccelStepper stepper1(HALFSTEP, motorPin1, motorPin3, motorPin2, motorPin4);
 
 Q2HX711 hx711(A3, A2);
@@ -61,7 +65,6 @@ void checkSchedule() {
   //testa se é o horário de liberar em todos os schedules
 }
 
-String command[10];
 
 void split(String str) {
 
@@ -79,6 +82,8 @@ void split(String str) {
 }
 
 void check() {
+  Serial.print("\nHora ");
+  Serial.println(second());
 }
 
 void controlMotor() {
@@ -105,7 +110,18 @@ void controlMotor() {
   stepper1.run();
 }
 
-void treatSchedule(String comando) {
+void handleActivation(int massAsked, String mode) {
+
+  long weight = getWeight();
+
+  long desiredMass = mode == "0" ? massAsked: massAsked + weight;
+  if(desiredMass > weight) {
+    shouldMove = true;
+    isUnderHole = false;
+  }
+}
+
+void handleSchedule(String comando) {
 
   int spaces[10];
   int n = 0;
@@ -125,12 +141,10 @@ void treatSchedule(String comando) {
 //      scheduled[i/4].day = comando.substring(spaces[i - 1], spaces[i]).toInt();
 //    }
   }
-  timer.setInterval(1000, checkSchedule);
 }
 
-void treatAutomatic(String comando) {
+void handleAutomatic(String comando) {
   //Faz os tratamentos aí
-  timer.setInterval(3000, checkAutomatic);
 }
 
 void setup() {
@@ -144,7 +158,9 @@ void setup() {
 
   weightBeforeActivation = getWeight();
 
-  timer.setInterval(1000, check);  
+  timer.setInterval(1000, check);
+
+  setTime(15, 6, 40, 8, 3, 2017);
 }
 
 void loop() {
@@ -166,21 +182,30 @@ void loop() {
     if(command[0] == "ac") {
       String mode = command[1];
       int massAsked = command[2].toInt();
-      
-      long weight = getWeight();
+       
+      handleActivation(massAsked, mode);
 
-      desiredMass = massAsked + (mode == "0" ? 0 : weight);
-      if(desiredMass > weight) {
-        shouldMove = true;
-        isUnderHole = false;
+    } else if (command[0] == "au") {
+      
+      handleAutomatic(command[1]);
+      
+    } else if (command[0] == "sc") {
+
+      int id = command[1].toInt();
+      int hours = command[2].toInt();
+      int minutes = command[3].toInt();
+      int weight = command[4].toInt();
+      bool isActivated = (command[5].toInt() == 1 ? true : false);
+      
+      int days[8], i = 0;
+
+      for(i = 0; command[i+6].toInt() != -1; i++) {
+        days[i] = command[i+6].toInt();
       }
-    } else if (comando.startsWith("auto")) {
-      treatAutomatic(comando);
-//      Serial.print("-----\n P = ");
-//      Serial.println(getWeight());
-//      Serial.println("-----");
-    } else if (comando.startsWith("sche")) {
-      treatSchedule(comando);
+      days[i] = -1;
+      
+      handleSchedule(id, hours, minutes, weight, isActivated, days);
+      
     } else {
       Serial.println("Mas nada aconteceu");
     }
