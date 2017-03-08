@@ -17,7 +17,6 @@ typedef struct time {
 } Time;
 
 typedef struct Schedule {
-
   int id;
   int weight;
   int days[7] = {0, 0, 0, 0, 0, 0, 0};
@@ -41,6 +40,8 @@ int timerId = 0;
 
 SimpleTimer timer;
 
+String command[20];
+
 AccelStepper stepper1(HALFSTEP, motorPin1, motorPin3, motorPin2, motorPin4);
 
 Q2HX711 hx711(A3, A2);
@@ -63,15 +64,12 @@ void checkAutomatic() {
     Serial.println("-----");
 }
 
-void checkSchedule() {
-  //testa se é o horário de liberar em todos os schedules
-}
+void split(String str) {
 
-String command[10];
-
-void split(char *string) {
-
+  char string[50];
   char *p, *q;
+
+  str.toCharArray(string, 50);
 
   p = strtok_r(string, " ", &q);
 
@@ -87,6 +85,8 @@ void check() {
   Serial.print(minute());
   Serial.print(" : ");
   Serial.println(second());
+
+  checkSchedule();
 }
 
 void controlMotor() {
@@ -113,29 +113,32 @@ void controlMotor() {
   stepper1.run();
 }
 
-void handleActivation(int massAsked, String mode) {
+void handleActivation(int massAsked, int mode) {
+
+  Serial.println("\nATIVOU");
 
   long weight = getWeight();
 
-  long desiredMass = mode == "0" ? massAsked: massAsked + weight;
+  long desiredMass = mode == 0 ? massAsked: massAsked + weight;
   if(desiredMass > weight) {
     shouldMove = true;
     isUnderHole = false;
   }
 }
 
-void handleSchedule(int id, int hours, int minutes, int isActivated, int days[7]) {
+void handleSchedule(int id, int hours, int minutes, int weight, bool isActivated, int days[]) {
 
   bool isNew = true;
-  int i;
+  int i = 0;
   
   Schedule schedule;
   schedule.id = id;
+  schedule.weight = weight;
   schedule.time.hours = hours;
   schedule.time.minutes = minutes;
-  schedule.isActivated = isActivated ? true : false;
-  for(i = 0; i < 7; i++)
-     schedule.days[i] = days[i];
+  schedule.isActivated = isActivated;
+  while(days[i] != -1)
+    schedule.days[days[i++]] = 1;
   
   for(i = 0; i < numberOfSchedules; i++)
     if(schedules[i].id == id) {
@@ -148,6 +151,15 @@ void handleSchedule(int id, int hours, int minutes, int isActivated, int days[7]
   } else {
     schedules[i] = schedule;
   }
+}
+
+void checkSchedule() {
+  
+  for(int i = 0; i < numberOfSchedules; i++)
+  //TODO: Test if the current day is an activation day
+    if(schedules[i].time.hours == hour() && schedules[i].time.minutes == minute()) {
+      handleActivation(schedules[i].weight, 0);
+    }
 }
 
 void handleAutomatic(String comando) {
@@ -185,18 +197,32 @@ void loop() {
   if(/*my*/Serial.available()) {
     
     String comando = /*my*/Serial.readString();
+    split(comando);
 
-    if(comando.startsWith("acti")) {
-      String mode = comando.substring(3, 4);
-      int massAsked = comando.substring(4).toInt();
-      
+  if(command[0] == "ac") {
+      int mode = command[1].toInt();
+      int massAsked = command[2].toInt();
+       
       handleActivation(massAsked, mode);
-    } else if (comando.startsWith("auto")) {
-      //handleAutomatic(comando);
-    } else if (comando.startsWith("sche")) {
-      if(numberOfSchedules < 10) {
-        
+
+    } else if (command[0] == "au") {
+      handleAutomatic(command[1]);
+    } else if (command[0] == "sc") {
+
+      int id = command[1].toInt();
+      int hours = command[2].toInt();
+      int minutes = command[3].toInt();
+      int weight = command[4].toInt();
+      bool isActivated = (command[5].toInt() == 1 ? true : false);
+      
+      int days[8], i = 0;
+
+      for(i = 0; command[i+6].toInt() != -1; i++) {
+        days[i] = command[i+6].toInt();
       }
+      days[i] = -1;
+      
+      handleSchedule(id, hours, minutes, weight, isActivated, days);      
     } else {
       Serial.println("Mas nada aconteceu");
     }
