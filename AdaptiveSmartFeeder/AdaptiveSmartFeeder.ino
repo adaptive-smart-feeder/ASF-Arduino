@@ -1,133 +1,133 @@
-#include <Time.h>
-#include <TimeLib.h>
-#include <Q2HX711.h>
-#include <SoftwareSerial.h>
-#include <AccelStepper.h>
-#include "SimpleTimer.h"
-#include <string.h>
-
-#define HALFSTEP 8
-#define motorPin1  9
-#define motorPin2  10
-#define motorPin3  11
-#define motorPin4  12
-
-typedef struct time {
-  int minutes, hours;
-} Time;
-
-typedef struct Schedule {
-  int id;
-  int weight;
-  int days[7] = {0, 0, 0, 0, 0, 0, 0};
-  Time time;
-  bool isActivated;
-} Schedule;
-
-Schedule schedules[10];
-int numberOfSchedules = 0;
-
-long zero = 83843;
-long weightBeforeActivation = 0;
-
-bool isUnderHole = false;
-bool shouldMove = false;
-
-int target = -1075;
-int desiredMass = 0;
-int massOfPlate = 135;
-int timerId = 0;
-
-SimpleTimer timer;
-
-String command[20];
-
-AccelStepper stepper1(HALFSTEP, motorPin1, motorPin3, motorPin2, motorPin4);
-
-Q2HX711 hx711(A3, A2);
-
-SoftwareSerial mySerial(7, 8);
-
-long getWeight() {
-
-  long diff = (zero - hx711.read() / 100);
-  diff = (diff / 3.08 - massOfPlate);
-  return diff > 0 ? diff : 0;
-}
-
-void checkAutomatic() {
+  #include <Time.h>
+  #include <TimeLib.h>
+  #include <Q2HX711.h>
+  #include <SoftwareSerial.h>
+  #include <AccelStepper.h>
+  #include "SimpleTimer.h"
+  #include <string.h>
   
-    Serial.print("Uptime (s): ");
-    Serial.println(millis() / 1000);
-    Serial.print("-----\n P = ");
-    Serial.println(getWeight());
-    Serial.println("-----");
-}
-
-void split(String str) {
-
-  char string[50];
-  char *p, *q;
-
-  str.toCharArray(string, 50);
-
-  p = strtok_r(string, " ", &q);
-
-  for(int i = 0; p != NULL; i++) {
-    command[i] = String(p);
-    p = strtok_r(NULL, " ", &q);
+  #define HALFSTEP 8
+  #define motorPin1  9
+  #define motorPin2  10
+  #define motorPin3  11
+  #define motorPin4  12
+  
+  typedef struct time {
+    int minutes, hours;
+  } Time;
+  
+  typedef struct Schedule {
+    int id;
+    int weight;
+    int days[7] = {0, 0, 0, 0, 0, 0, 0};
+    Time time;
+    bool isActivated;
+  } Schedule;
+  
+  Schedule schedules[10];
+  int numberOfSchedules = 0;
+  
+  long zero = 83843;
+  long weightBeforeActivation = 0;
+  
+  bool isUnderHole = false;
+  bool shouldMove = false;
+  
+  int target = -1075;
+  int desiredMass = 0;
+  int massOfPlate = 135;
+  int timerId = 0;
+  
+  SimpleTimer timer;
+  
+  String command[20];
+  
+  AccelStepper stepper1(HALFSTEP, motorPin1, motorPin3, motorPin2, motorPin4);
+  
+  Q2HX711 hx711(A3, A2);
+  
+  SoftwareSerial mySerial(7, 8);
+  
+  long getWeight() {
+  
+    long diff = (zero - hx711.read() / 100);
+    diff = (diff / 3.08 - massOfPlate);
+    return diff > 0 ? diff : 0;
   }
-}
-
-void check() {
   
-  Serial.print("\nTime: ");
-  Serial.print(minute());
-  Serial.print(" : ");
-  Serial.println(second());
-
-  checkSchedule();
-}
-
-void controlMotor() {
-
-  if(stepper1.distanceToGo() == 0 && shouldMove) {
-    if(!isUnderHole) {
-      delay(100);
-      long currentWeight = getWeight();
-      if(desiredMass > currentWeight) {
+  void checkAutomatic() {
+    
+      Serial.print("Uptime (s): ");
+      Serial.println(millis() / 1000);
+      Serial.print("-----\n P = ");
+      Serial.println(getWeight());
+      Serial.println("-----");
+  }
+  
+  void split(String str) {
+  
+    char string[50];
+    char *p, *q;
+  
+    str.toCharArray(string, 50);
+  
+    p = strtok_r(string, " ", &q);
+  
+    for(int i = 0; p != NULL; i++) {
+      command[i] = String(p);
+      p = strtok_r(NULL, " ", &q);
+    }
+  }
+  
+  void check() {
+    
+    Serial.print("\nTime: ");
+    Serial.print(minute());
+    Serial.print(" : ");
+    Serial.println(second());
+  
+    checkSchedule();
+  }
+  
+  void controlMotor() {
+  
+    if(stepper1.distanceToGo() == 0 && shouldMove) {
+      if(!isUnderHole) {
+        delay(100);
+        long currentWeight = getWeight();
+        if(desiredMass > currentWeight) {
+          target *= -1;
+          stepper1.moveTo(stepper1.currentPosition() + target);
+        } else {
+          shouldMove = false;
+          desiredMass = 0;
+        }
+        delay(200);
+      } else {
+        delay(1000);
         target *= -1;
         stepper1.moveTo(stepper1.currentPosition() + target);
-      } else {
-        shouldMove = false;
-        desiredMass = 0;
       }
-      delay(200);
-    } else {
-      delay(1000);
-      target *= -1;
-      stepper1.moveTo(stepper1.currentPosition() + target);
+      isUnderHole = !isUnderHole;
     }
-    isUnderHole = !isUnderHole;
+    stepper1.run();
   }
-  stepper1.run();
-}
-
-void handleActivation(int massAsked, int mode) {
-
-  Serial.println("\nATIVOU");
-
-  long weight = getWeight();
-
-  long desiredMass = mode == 0 ? massAsked: massAsked + weight;
-  if(desiredMass > weight) {
-    shouldMove = true;
-    isUnderHole = false;
+  
+  void handleActivation(int massAsked, int mode) {
+  
+    Serial.println("\nATIVOU");
+  
+    long weight = getWeight();
+  
+    long desiredMass = mode == 0 ? massAsked: massAsked + weight;
+    if(desiredMass > weight) {
+      shouldMove = true;
+      isUnderHole = false;
+    }
   }
-}
-
-void handleSchedule(int id, int hours, int minutes, int weight, bool isActivated, int days[]) {
-
+  
+  void handleSchedule(int id, int hours, int minutes, int weight, bool isActivated, int days[]) {
+  
   bool isNew = true;
   int i = 0;
   
@@ -194,9 +194,9 @@ void loop() {
   if(desiredMass <= 0 && !isUnderHole && !shouldMove)
       weightBeforeActivation = getWeight();
 
-  if(/*my*/Serial.available()) {
+  if(mySerial.available()) {
     
-    String comando = /*my*/Serial.readString();
+    String comando = mySerial.readString();
     split(comando);
 
   if(command[0] == "ac") {
@@ -204,17 +204,15 @@ void loop() {
       int massAsked = command[2].toInt();
        
       handleActivation(massAsked, mode);
-
     } else if (command[0] == "au") {
       handleAutomatic(command[1]);
     } else if (command[0] == "sc") {
-
       int id = command[1].toInt();
       int hours = command[2].toInt();
       int minutes = command[3].toInt();
       int weight = command[4].toInt();
       bool isActivated = (command[5].toInt() == 1 ? true : false);
-      
+
       int days[8], i = 0;
 
       for(i = 0; command[i+6].toInt() != -1; i++) {
@@ -223,6 +221,10 @@ void loop() {
       days[i] = -1;
       
       handleSchedule(id, hours, minutes, weight, isActivated, days);      
+    } else if (command[0] == "dt") {
+      int hours = command[1].toInt();
+      int minutes = command[2].toInt();
+      setTime(hours, minutes, 0, 1, 1, 2017);
     } else {
       Serial.println("Mas nada aconteceu");
     }
