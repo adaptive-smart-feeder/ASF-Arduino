@@ -39,6 +39,7 @@
   int timerId = 0;
   
   SimpleTimer timer;
+  int timeWeekDay;
   
   String command[20];
   
@@ -171,8 +172,7 @@ void checkSchedule() {
 
   Serial.println("Entrou Sche");
   for(int i = 0; i < numberOfSchedules; i++)
-  //TODO: Test if the current day is an activation day
-    if(schedules[i].time.hours == hour() && schedules[i].time.minutes == minute()) {
+    if(schedules[i].days[timeWeekDay] == 1 && schedules[i].time.hours == hour() && schedules[i].time.minutes == minute()) {
       handleActivation(schedules[i].weight, 0);
       Serial.println("Peso");
       Serial.println(schedules[i].weight);
@@ -234,16 +234,21 @@ void loop() {
       int id = command[1].toInt();
       int hours = command[2].toInt();
       int minutes = command[3].toInt();
-      int weight = command[4].toInt();
-      bool isActivated = (command[5].toInt() == 1 ? true : false);
+      int currentHours = command[4].toInt();
+      int currentMinutes = command[5].toInt();
+      int currentWeekDay = command[6].toInt();
+      int weight = command[7].toInt();
+      bool isActivated = (command[8].toInt() == 1 ? true : false);
 
       int days[8], i = 0;
 
-      for(i = 0; command[i+6].toInt() != -1; i++) {
-        days[i] = command[i+6].toInt();
+      for(i = 0; command[i+9].toInt() != -1; i++) {
+        days[i] = command[i+9].toInt();
       }
       days[i] = -1;
-      
+
+      setTime(currentHours, currentMinutes, 0, 1, 1, 2017);
+      timeWeekDay = currentWeekDay;
       handleSchedule(id, hours, minutes, weight, isActivated, days);
           
     } else if (command[0] == "dt") {
